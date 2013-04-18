@@ -1,0 +1,6 @@
+#!/bin/sh
+<%
+require 'uri'
+uri = URI.parse(node.proxy.https_proxy)
+%>
+ssh -o ProxyCommand="corkscrew <%= uri.host %> <%= uri.port %> %h %p" $@

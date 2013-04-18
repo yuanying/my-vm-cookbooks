@@ -1,0 +1,16 @@
+{
+  "name": "nise_bosh",
+  "default_attributes": {},
+  "override_attributes": {},
+  "json_class": "Chef::Role",
+  "description": "Cloudfoundry Nise BOSH",
+  "chef_type": "role",
+  "run_list" : [ 
+             "recipe[apt::proxy]",
+             "recipe[apt]",
+             "recipe[ruby_build]",
+             "recipe[ruby]",
+             "recipe[root]",
+             "recipe[nise_bosh]"
+			]
+}

@@ -1,0 +1,7 @@
+#!/bin/bash
+<%
+require 'uri'
+uri = URI.parse(node.proxy.https_proxy)
+%>
+CORKSCREW=`which corkscrew`
+$CORKSCREW <%= uri.host %> <%= uri.port %> $1 $2
