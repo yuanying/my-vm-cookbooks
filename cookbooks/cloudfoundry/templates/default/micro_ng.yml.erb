@@ -1,43 +1,133 @@
 ---
 deployment: micro
-release:
-  name: micro
-  version: 13
-configuration_hash: {}
-jobs:
-- name: micro
-  template:
-  - postgres
-  - nats
-  - gorouter
-  - dea_next
-  - health_manager_next
-  - cloud_controller_ng
-  - serialization_data_server
-  - uaa
-  - vcap_redis
-  - mysql_node_ng
-  - mysql_gateway
-  - postgresql_node_ng
-  - postgresql_gateway
-  - mongodb_gateway
-  - mongodb_node_ng
 properties:
   micro: true
-  domain: vcap.me
-  env:
-  cc_props: ccng
+  domain: <%= node[:cf][:domain] || "vcap.me" %>
+  
+  cc_props: cc
   hm_props: health_manager_ccng
+  
+  env:
+  <% if node[:proxy] %>
+    <% if node[:proxy][:http_proxy] %>http_proxy: "<%= node[:proxy][:http_proxy] %>"<% end %>
+    <% if node[:proxy][:https_proxy] %>https_proxy: "<%= node[:proxy][:https_proxy] %>"<% end %>
+    <% if node[:proxy][:no_proxy] %>no_proxy: "<%= node[:proxy][:no_proxy] %>"<% end %>
+  <% end %>
+    
   networks:
-    apps: local
-    management: local
+    apps: default
+    management: default
+  
+  nats:
+    user: nats
+    password: nats
+    address: 127.0.0.1
+    port: 4222
+
+  database: &database
+    db_scheme: postgresql
+    address: 127.0.0.1
+    port: 5432
+    roles:
+    - tag: admin
+      name: alladmin
+      password: aaaBauWauZZb2
+    databases:
+    - tag: cc
+      name: ccdb
+    - tag: cc_ng
+      name: ccdb_ng
+      citext: true
+    - tag: uaa
+      name: uaadb
+
+  db: database
+  ccdb: *database
+  uaadb: *database
+  ccdb_ng:
+    db_scheme: postgres
+    address: 127.0.0.1
+    port: 5432
+    roles:
+    - tag: admin
+      name: alladmin
+      password: aaaBauWauZZb2
+    databases:
+    - tag: cc
+      name: ccdb_ng
+      citext: true
+  
+  ccng: &ccng
+    default_quota_definition: free
+    srv_api_uri: http://api.<%= node[:cf][:domain] || "vcap.me" %>
+    logging_level: debug
+    bulk_api_password: bulk_api_password
+    staging_upload_user: staging
+    staging_upload_password: staging
+    external_host: api
+    uaa_resource_id: cloud_controller
+    quota_definitions:
+      free:
+        total_services: 10                     
+        memory_limit: 1024
+        non_basic_services_allowed: false   
+        paid_memory_limit: 0               
+      paid:
+        memory_limit: 204800
+        non_basic_services_allowed: true
+        total_services: 32
+      yeti:
+        total_services: 500 
+        memory_limit: 204800
+        non_basic_services_allowed: true    
+    bootstrap_admin_email: 'micro@vcap.me'
+    packages:
+      fog_connection:
+        provider: Local
+        local_root: /var/vcap/shared
+      app_package_directory_key: cc-packages
+    droplets:
+      fog_connection:
+        provider: Local
+        local_root: /var/vcap/shared
+      droplet_directory_key: cc-droplets
+    resource_pool:
+      minimum_size: 0
+      maximum_size: 536870912
+      resource_directory_key: cc-resources
+      fog_connection:
+        provider: Local
+        local_root: /var/vcap/shared
+    # admins:
+
+  cc: *ccng
+  
+  login:
+    enabled: false
+  
+  vcap_redis:
+    address: 127.0.0.1
+    port: 3456
+    password:
+    maxmemory: 500000000
+  
+  health_manager_ccng:
+    shadow_mode: disable
+    cc_partition: ng
+    
   dea:
-    max_memory: 2048
+    max_memory: 1024
+
   dea_next:
-    memory_mb: 2048
-    disk_mb: 8192
-    num_instances: 16
+    memory_mb: 8192
+    memory_overcommit_factor: 4
+    disk_mb: 16384
+    disk_overcommit_factor: 4
+    num_instances: 256
+  
   router:
+    trace_key: 22 # FIXME nise_bosh need support default property value from spec.
+    offset: 0 # FIXME nise_bosh need support default property value from spec.
     client_inactivity_timeout: 600
     app_inactivity_timeout: 600
     local_route: 127.0.0.1
@@ -45,103 +135,7 @@ properties:
       port: 8080
       user:
       password:
-  nats:
-    user: nats
-    password:
-    address: 127.0.0.1
-    port: 4222
-
-  ccdb:
-    template: postgres
-    address: 127.0.0.1
-    port: 2544
-    databases:
-    - tag: cc
-      name: appcloud
-    - tag: uaa
-      name: uaa
-    roles:
-    - name: root
-      password:
-      tag: admin
-    - name: uaa
-      password:
-      tag: uaa
-
-  ccdb_ng:
-    address: 127.0.0.1
-    port: 2544
-    pool_size: 10
-    databases:
-    - tag: cc
-      name: appcloud_ng
-      citext: true
-    - tag: uaa
-      name: uaa_ng
-      citext: true
-    roles:
-    - name: root
-      password:
-      tag: admin
-    - name: uaa
-      password:
-      tag: uaa
-
-  health_manager_ccng:
-    shadow_mode: disable
-    cc_partition: ng
-
-  cc:
-    description: "VMware's Micro Cloud Application Platform"
-    srv_api_uri: http://api.vcap.me
-    password:
-    token:
-    allow_debug: true
-    allow_registration: true
-    admins:
-    - admin@vcap.me
-    admin_account_capacity:
-      memory: 2048
-      app_uris: 32
-      services: 16
-      apps: 16
-    default_account_capacity:
-      memory: 2048
-      app_uris: 32
-      services: 16
-      apps: 16
-    staging_upload_user:
-    staging_upload_password:
-    uaa:
-      enabled: true
-      resource_id: cloud_controller
-      token_creation_email_filter: [""]
-    service_extension:
-      service_lifecycle:
-        max_upload_size: 5
-    use_nginx: true
-
-  ccng:
-    default_quota_definition: free
-    bootstrap_admin_email: micro@vcap.me
-    srv_api_uri: http://ccng.vcap.me
-    external_host: ccng
-    uaa_resource_id: cloud_controller
-    quota_definitions:
-      free:
-        total_services: 10
-        memory_limit: 1024
-        paid_memory_limit: 0
-        non_basic_services_allowed: false
-      paid:
-        memory_limit: 204800
-        non_basic_services_allowed: true
-        total_services: 32
-      yeti:
-        total_services: 500
-        memory_limit: 204800
-        non_basic_services_allowed: true
-    admins:
+  
   mysql_gateway:
     ip_route: 127.0.0.1
     token:
@@ -157,65 +151,9 @@ properties:
     supported_versions: ["5.5"]
     default_version: "5.5"
     max_tmp: 1024
-  redis_gateway:
-    ip_route: 127.0.0.1
-    token:
-    supported_versions: ["2.2"]
-    version_aliases:
-      current: "2.2"
-  redis_node:
-    ip_route: 127.0.0.1
-    available_memory: 256
-    supported_versions: ["2.2"]
-    default_version: "2.2"
-  mongodb_gateway:
-    ip_route: 127.0.0.1
-    token:
-    supported_versions: ["1.8", "2.0"]
-    version_aliases:
-      current: "2.0"
-      deprecated: "1.8"
-  mongodb_node:
-    ip_route: 127.0.0.1
-    available_memory: 256
-    supported_versions: ["2.2"]
-    default_version: "2.2"
-    max_tmp: 900
-  postgresql_gateway:
-    ip_route: 127.0.0.1
-    admin_user: psql_admin
-    admin_passwd_hash:
-    token:
-    supported_versions: ["9.1"]
-    version_aliases:
-      current: "9.1"
-    default_plan: "100"
-  postgresql_node:
-    ip_route: 127.0.0.1
-    admin_user: psql_admin
-    admin_passwd_hash:
-    available_storage: 2048
-    max_db_size: 256
-    max_long_tx: 30
-    supported_versions: ["9.1"]
-    default_version: "9.1"
-    password: secret
-  postgresql_server:
-    max_connections: 30
-    listen_address: 127.0.0.1
-  rabbit_gateway:
-    ip_route: 127.0.0.1
-    port: 8000
-    token:
-    supported_versions: ["2.4"]
-    version_aliases:
-      current: "2.4"
-  rabbit_node:
-    ip_route: 127.0.0.1
-    supported_versions: ["2.4"]
-    default_version: "2.4"
+
   serialization_data_server:
-    upload_token:
+    upload_token: token
     use_nginx: false
     upload_timeout: 10
     port: 8090
@@ -239,59 +177,7 @@ properties:
     max_active_tasks: 20
     queues:
     - staging
-  uaa:
-    cc:
-      token_secret:
-      client_secret:
-    client:
-      autoapprove: false
-    admin:
-      client_secret:
-    login:
-      client_secret:
-    batch:
-      username:
-      password:
-    port: 8100
-    catalina_opts: -Xmx128m -Xms30m -XX:MaxPermSize=128m
-    scim:
-      users:
-        - micro@vcap.me|micro|scim.write,scim.read,openid
-    clients:
-      vmc:
-        authorized-grant-types: implicit,password,refresh_token
-        scope: cloud_controller.read,cloud_controller.write,openid,password.write
-        authorities: uaa.none
-        id: vmc
-        redirect-uri: http://uaa.cloudfoundry.com/redirect/vmc,https://uaa.cloudfoundry.com/redirect/vmc
-        access-token-validity: 604800
-      cf:
-        authorized-grant-types: implicit,password,refresh_token
-        scope: cloud_controller.read,cloud_controller.write,openid,password.write
-        authorities: uaa.none
-        id: cf
-        redirect-uri: http://uaa.cloudfoundry.com/redirect/vmc,https://uaa.cloudfoundry.com/redirect/vmc
-        access-token-validity: 604800
-    no_ssl: true
-  uaadb:
-    db_scheme: postgresql
-    address: 127.0.0.1
-    port: 2544
-    roles:
-    - tag: admin
-      name: uaa
-      password:
-    databases:
-    - tag: uaa
-      name: uaa_ng
-  vcap_redis:
-    address: 127.0.0.1
-    port: 3456
-    password:
-    maxmemory: 500000000
-  db: ccdb_ng
-  login:
-    enabled: false
+  
   plan: "100"
   service_plans:
     mysql:
@@ -328,84 +214,58 @@ properties:
             worker_count: 5
           warden:
             enable: false
-    postgresql:
-      "100":
-        description: "Shared server, shared VM, 1MB memory, 10MB storage, 10 connections"
-        free: true
-        job_management:
-          high_water: 450
-          low_water: 50
-        configuration:
-          capacity: 500
-          max_db_size: 10
-          max_long_query: 3
-          max_long_tx: 10
-          max_clients: 10
-          max_connections: 1000
-          shared_buffers: 312
-          effective_cache_size: 1115
-          shmmax: 390070272
-          checkpoint_segments: 16
-          checkpoint_segments_max: 50
-          maintenance_work_mem: 30
-          backup:
-            enable: true
-          lifecycle:
-            enable: true
-            serialization: enable
-            snapshot:
-              quota: 1
-            worker_count: 5
-          warden:
-            enable: false
-    mongodb:
-      "100":
-        description: "Dedicated server, shared VM, 250MB storage, 10 connections"
-        free: true
-        job_management:
-          high_water: 100
-          low_water: 20
-        configuration:
-          capacity: 125
-          max_clients: 10
-          quota_files: 4
-          quota_data_size: 240
-          enable_journaling: true
-          backup:
-            enable: true
-          lifecycle:
-            enable: true
-            serialization: enable
-            snapshot:
-              quota: 1
-            worker_count: 5
-          warden:
-            enable: false
-    rabbit:
-      free:
-        job_management:
-          low_water: 100
-          high_water: 1400
-        configuration:
-          max_memory_factor: 0.5
-          max_clients: 512
-          capacity: 200
-    redis:
-      free:
-        job_management:
-          high_water: 1400
-          low_water: 100
-        configuration:
-          capacity: 200
-          max_memory: 16
-          max_swap: 32
-          max_clients: 500
-          backup:
-            enable: true
-    vblob:
-      free:
-        job_management:
-          low_water: 100
-          high_water: 1400
-        configuration:
-          capacity: 200
+  
+  uaa:
+    spring_profiles: postgresql
+    no_ssl: true
+    jwt: 
+      verification_key: false
+    cc:
+      token_secret: cc_token
+      client_secret: cc_token_secret
+    client:
+      autoapprove:
+        - cf
+        - vmc
+        - my
+        - micro
+        - support-signon
+        - appdirect
+        - dashboard
+        - portal
+        - service_admin
+    admin:
+      client_secret: admin
+    login:
+      client_secret: login
+    batch:
+      username: batch
+      password: batch
+    port: 8100
+    catalina_opts: -Xmx128m -Xms30m -XX:MaxPermSize=128m
+    scim:
+      users:
+        - micro@vcap.me|micro|scim.write,scim.read,openid
+    clients:
+      dashboard:
+        id: dashboard
+        secret: dashboard-password
+        scope: openid,dashboard.user
+        authorities: uaa.admin,uaa.resource,tokens.read,scim.read,scim.write
+        authorized-grant-types: client_credentials,authorization_code,refresh_token
+      service_admin:
+        id: service_admin
+        authorized-grant-types: implicit
+        authorities: uaa.none
+        scope: cloud_controller.read,cloud_controller.write,openid,password.write,cloud_controller.admin,scim.read,scim.write
+      vmc:
+        override: true
+        authorized-grant-types: implicit
+        authorities: uaa.none
+        scope: cloud_controller.read,cloud_controller.write,openid,password.write,cloud_controller.admin,scim.read,scim.write
+      cf:
+        override: true
+        authorized-grant-types: implicit
+        authorities: uaa.none
+        scope: cloud_controller.read,cloud_controller.write,openid,password.write,cloud_controller.admin,scim.read,scim.write
+    
