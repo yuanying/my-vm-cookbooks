@@ -1,8 +1,11 @@
 ---
+<%
+domain_name = node[:cf] && node[:cf][:domain] || "vcap.me"
+%>
 deployment: micro
 properties:
   micro: true
-  domain: <%= node[:cf][:domain] || "vcap.me" %>
+  domain: <%= domain_name %>
   
   cc_props: cc
   hm_props: health_manager_ccng
@@ -59,7 +62,7 @@ properties:
   
   ccng: &ccng
     default_quota_definition: free
-    srv_api_uri: http://api.<%= node[:cf][:domain] || "vcap.me" %>
+    srv_api_uri: http://api.<%= domain_name %>
     logging_level: debug
     bulk_api_password: bulk_api_password
     staging_upload_user: staging
