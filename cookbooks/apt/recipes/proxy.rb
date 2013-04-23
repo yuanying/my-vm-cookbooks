@@ -1,5 +1,5 @@
 
-if node['proxy']['http_proxy']
+if node['proxy'] && node['proxy']['http_proxy']
   Chef::Log.info(node['http_proxy'])
   proxy = "Acquire::http::Proxy \""
   proxy += node['proxy']['http_proxy']
