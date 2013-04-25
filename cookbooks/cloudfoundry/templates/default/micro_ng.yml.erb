@@ -83,7 +83,11 @@ properties:
       yeti:
         total_services: 500 
         memory_limit: 204800
-        non_basic_services_allowed: true    
+        non_basic_services_allowed: true
+      runaway:
+        memory_limit: 204800
+        non_basic_services_allowed: true
+        total_services: 32
     bootstrap_admin_email: 'micro@vcap.me'
     packages:
       fog_connection:
