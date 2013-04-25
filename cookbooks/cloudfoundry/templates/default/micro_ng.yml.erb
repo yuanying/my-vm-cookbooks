@@ -61,6 +61,7 @@ properties:
       citext: true
   
   ccng: &ccng
+  	use_nginx: false
     default_quota_definition: free
     srv_api_uri: http://api.<%= domain_name %>
     logging_level: debug

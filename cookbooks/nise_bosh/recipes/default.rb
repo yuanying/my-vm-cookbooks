@@ -33,7 +33,7 @@ if node.nise_bosh.create_stemcell
   bash "Create Stemcell" do
     cwd File.join("", "tmp")
     code <<-EOH
-    #{node.nise_bosh.dir}/bin/gen-stemcell --bosh /opt/vcap/bosh
+    #{node.nise_bosh.dir}/bin/gen-stemcell --bosh /vcap/bosh
     EOH
 
     not_if do
