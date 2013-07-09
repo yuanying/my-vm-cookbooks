@@ -1,3 +1,6 @@
 [submodule "cookbooks/virtualbox"]
 	path = cookbooks/virtualbox
 	url = https://github.com/peplin/virtualbox-cookbook.git
+[submodule "cookbooks/docker"]
+	path = cookbooks/docker
+	url = https://github.com/thoward/docker-cookbook.git
