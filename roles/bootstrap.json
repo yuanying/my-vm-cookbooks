@@ -8,6 +8,7 @@
   "run_list" : [ 
              "recipe[apt::proxy]",
              "recipe[apt]",
+             "recipe[users]",
              "recipe[ruby]",
              "recipe[root]"
 			]

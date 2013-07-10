@@ -13,3 +13,7 @@ execute "apt-get-upgrade" do
   # not_if do ::File.exists?('/var/lib/apt/periodic/update-success-stamp') end
 end
 
+node[:apt][:default][:packages].each do |pkg|
+  package pkg
+end
+
