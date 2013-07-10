@@ -3,12 +3,11 @@
   "default_attributes": {},
   "override_attributes": {},
   "json_class": "Chef::Role",
-  "description": "Cloudfoundry Nise BOSH",
+  "description": "Bootstrap for Yuanying's VM",
   "chef_type": "role",
   "run_list" : [ 
              "recipe[apt::proxy]",
              "recipe[apt]",
-             "recipe[ruby_build]",
              "recipe[ruby]",
              "recipe[root]"
 			]
