@@ -9,6 +9,7 @@
              "recipe[apt::proxy]",
              "recipe[apt]",
              "recipe[users]",
+             "recipe[sudo]",
              "recipe[ruby]",
              "recipe[root]"
 			]
