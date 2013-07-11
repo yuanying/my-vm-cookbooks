@@ -1,4 +1,4 @@
-name             "ruby"
+name             "rbenv_ruby"
 maintainer       "Yuanying"
 maintainer_email "yuan-chef@fraction.jp"
 license          "Apache 2.0"
